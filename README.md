@@ -1,13 +1,23 @@
 # Projeto WhatsApp Clone
 
-[![Hcode Treinamentos](https://www.hcode.com.br/res/img/hcode-200x100.png)](https://www.hcode.com.br)
+Projeto desenvolvido junto com a HCode pelo curso da Udemy como exemplo do Curso Completo de JavaScript.
 
-Projeto desenvolvido como exemplo do Curso Completo de JavaScript na Udemy.com.
+## Ensinamentos, plugis e framework utilizados
 
-### Projeto
+  - Darafort;
+  - Firebase;
+  - cloneNode;
+  - dispatchEvent;
+  - Esconder e apresentar paineis
+  - mais .....
+  
+
+## Instalação e configuração
+
+## Layout - Frontend
 ![WhatsApp Clone](https://firebasestorage.googleapis.com/v0/b/hcode-com-br.appspot.com/o/whatsapp.jpg?alt=media&token=5fc78e3b-4871-424f-abfa-b765f2515d0c)
 
-### Recursos Usados
+## Recursos Usados
 
 Lista de recursos usados em aula para este projeto
 
