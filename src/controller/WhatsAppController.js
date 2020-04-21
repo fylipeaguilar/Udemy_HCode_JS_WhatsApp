@@ -1,6 +1,11 @@
+// ****** Utilizando o sitema de import do Webpack **********//
+import { Format } from './../util/Format';
+import { CameraController } from './CameraController';
+import { DocumentPreviewController } from './DocumentPreviewController'
+
 // Criando a classe "WhatsAppController" para
 // ter as funções das nossas regras de negócio
-class WhatsAppController {
+export class WhatsAppController {
 
     // Criando o métodos construtor
     constructor() {
@@ -324,6 +329,11 @@ class WhatsAppController {
 
             })
 
+            // Instaciando o objeto da camera
+            // Ja passando para o nosso controle a div que ele vai
+            // mostrar a imagem em tempo real pelo id: videoCamera (this.el.videoCamera)
+            this._camera = new CameraController(this.el.videoCamera);
+
         })
 
         // Fechar o painel da câmera
@@ -334,12 +344,58 @@ class WhatsAppController {
             // Reezibir o painel do container de mensagens
             this.el.panelMessagesContainer.show()
 
+            // Fechar a funcao da camera no PC
+            this._camera.stop()
+
         })
 
         // Abrir a função de tirar foto
         this.el.btnTakePicture.on('click', e => {
 
-            console.log('Abrir câmera')
+            let dataUrl =this._camera.tackPicture();
+
+            this.el.pictureCamera.src = dataUrl;
+
+            // Mostrando a foto
+            this.el.pictureCamera.show();
+
+            // Escondendo o vídeo
+            this.el.videoCamera.hide();
+
+            // Exibindo o botão para tirar foto novamente
+            this.el.btnReshootPanelCamera.show();
+
+            // Esconder o botão de tirar foto
+            this.el.containerTakePicture.hide()
+                        
+            // Adicionar o botão de enviar a foto
+            this.el.containerSendPicture.show()
+
+        })
+
+        this.el.btnReshootPanelCamera.on('click', e => {
+
+            // Esconder a foto
+            this.el.pictureCamera.hide();
+
+            // Exibir o vídeo
+            this.el.videoCamera.show();
+
+            // Esconder o botão para tirar foto novamente
+            this.el.btnReshootPanelCamera.hide();
+
+            // Exibir o botão de tirar foto
+            this.el.containerTakePicture.show()
+                        
+            // Esconder o botão de enviar a foto
+            this.el.containerSendPicture.hide()
+
+        })
+
+        // Enviar a foto
+        this.el.btnSendPicture.on('click', e => {
+
+            console.log(this.el.pictureCamera.src)
 
         })
 
@@ -360,6 +416,66 @@ class WhatsAppController {
                 'height': 'calc(100% - 120px)'
 
             })
+
+            // Para abrir uma nova janela do windows para selecionar
+            // o arquivo que queremos enviar
+            this.el.inputDocument.click();
+
+        })
+
+        // Verificar se houve mudanca, selecao dos arquivos
+        this.el.inputDocument.on('change', e => {
+
+            // Antes de tudo, vamos verificar se está retornando alguma coisa
+            if(this.el.inputDocument.files.length) {
+
+                // Dentro dessa variável, teremos uma lista de files
+                // Iremos pegar o primeiro
+                let file = this.el.inputDocument.files[0]
+
+                this._documentPreviewController = new DocumentPreviewController(file);
+
+                this._documentPreviewController.getPreviewData().then(result => {
+
+                    // console.log(file.type)
+
+                    this.el.filePanelDocumentPreview.hide();
+                    this.el.imagePanelDocumentPreview.show();
+                    // Se é uma imagem teremos o src e inserimoso conteudo de data
+                    // Nesse caso o result é um objeto
+                    this.el.imgPanelDocumentPreview.src = result.src;
+                    this.el.infoPanelDocumentPreview.innerHTML = result.info;
+                    
+
+                }).catch(err => {
+
+                    console.log("Entrei aqui");
+                    console.log(file.type);
+
+                    switch (file.type) {
+                        case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+                        case 'application/msword':
+                            // this.el.iconPanelDocumentPreview.classList.value = 'jcxhw icon-doc-doc';
+                            break;
+
+                        case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+                        case 'application/vnd.ms-excel':
+                            // this.el.iconPanelDocumentPreview.classList.value = 'jcxhw icon-doc-xls';
+                            break;
+
+                        case 'application/vnd.ms-powerpoint':
+                        case 'application/vnd.openxmlformats-officedocument.presentationml.presentation':
+                            // this.el.iconPanelDocumentPreview.classList.value = 'jcxhw icon-doc-ppt';
+                            break;
+
+                        default:
+                            // this.el.iconPanelDocumentPreview.classList.value = 'jcxhw icon-doc-generic';
+                    }
+
+
+                })
+
+            }           
 
         })
 
@@ -435,14 +551,14 @@ class WhatsAppController {
 
         this.el.inputText.on('keypress', e => {
 
-            if( e.key === 'Enter' && !e.crtlKey) {
+            if( e.key === 'Enter' && !e.ctrlKey) {
 
-                e.preventDefault()
+                e.preventDefault();
 
                 this.el.btnSend.click();
             }
 
-        })
+        });
 
 
         this.el.inputText.on('keyup', e => {
@@ -456,65 +572,87 @@ class WhatsAppController {
 
             } else {
 
-                this.el.inputPlaceholder.show()
+                this.el.inputPlaceholder.show();
                 this.el.btnSendMicrophone.show();
                 this.el.btnSend.hide();
 
             }
 
-        })
+        });
 
         this.el.btnSend.on('click', e => {
 
-            console.log(this.el.inputText.innerHTML)
+            console.log(this.el.inputText.innerHTML);
 
 
-        })
+        });
 
         // Abril o panel do emoji
         this.el.btnEmojis.on('click', e => {
 
-            this.el.panelEmojis.toggleClass('open')
+            this.el.panelEmojis.toggleClass('open');
             
-            //Selecionando o emoji
-            this.el.panelEmojis.querySelectorAll('.emojik').forEach( emoji => {
+        });
 
-                // Criar um evento para cada um dos emoji
-                emoji.on('click', e => {
+        //Selecionando o emoji
+        this.el.panelEmojis.querySelectorAll('.emojik').forEach( emoji => {
 
-                    console.log('Cheguei no emoji')
-                    let img = this.el.imgEmojiDefault.cloneNode()
+            // Criar um evento para cada um dos emoji
+            emoji.on('click', e => {
 
-                    img.style.cssText = emoji.style.cssText;
-                    img.dataset.unicode = emoji.dataset.unicode;
-                    img.alt = emoji.dataset.unicode;
+                // console.log('Cheguei no emoji');
+                let img = this.el.imgEmojiDefault.cloneNode();
 
-                    // ForEach para listar todsas as classes do emoji
-                    img.classList.forEach(name => {
+                img.style.cssText = emoji.style.cssText;
+                img.dataset.unicode = emoji.dataset.unicode;
+                img.alt = emoji.dataset.unicode;
 
-                        img.classList.add(name)
+                // ForEach para listar todsas as classes do emoji
+                emoji.classList.forEach(name => {
 
-                    })
-
-                    console.log(img)
-
-                    // console.log('Sai do click do emoji')
-                    this.el.inputText.appendChild(img)
-
-                    // Caso o emoji seja a primeira coisa digitada
-                    // Forcamos o evento de keyup para apagar o placeholder
-                    this.el.inputText.dispatchEvent(new Event('keyup'))
-
-
+                    img.classList.add(name);
 
                 })
 
-            })
+                // console.log('Sai do click do emoji')
+                // this.el.inputText.appendChild(img)
 
-        })
+                // getSelection é uma função nativa do JS que pega a posição do teclado
+                let cursor = window.getSelection();
 
-        
-        // ************** FIM DO CHAT ***************************** //
+                // Verificar se o nosso cursor está focado dentro do nosso campo input (focusNode)
+                if (!cursor.focusNode || !cursor.focusNode == 'input-text') {
+
+                    this.el.inputText.focus();
+                    cursor = window.getSelection();
+
+                }
+
+                // Método nativo do JS para verificar um range de valores
+                let range = document.createRange();
+
+                range = cursor.getRangeAt(0);
+
+                // deleteContents é um metodo nativo do JS que apaga o range selecionado
+                range.deleteContents();
+
+                // Adicionar o conteudo (neste caso o emoji), no ponto em questão
+                let frag = document.createDocumentFragment();
+
+                frag.appendChild(img);
+
+                range.insertNode(frag);
+
+                // Jogando o cursor para o final do arquivo
+                range.setStartAfter(img);
+
+                // Caso o emoji seja a primeira coisa digitada
+                // Forcamos o evento de keyup para apagar o placeholder
+                this.el.inputText.dispatchEvent(new Event('keyup'));
+
+            });
+
+        }); // ************** FIM DO CHAT ***************************** //
 
      } // ************** FIM do initEvents() ******************************
 
@@ -522,15 +660,15 @@ class WhatsAppController {
     // Isso pq os painel ficam "um sobre o outro"
     closeAllLeftPanel() {
 
-        this.el.panelAddContact.hide()
-        this.el.panelEditProfile.hide()
+        this.el.panelAddContact.hide();
+        this.el.panelEditProfile.hide();
 
     }
 
     closeMenuAttach(e) {
 
-        document.removeEventListener('click', this.closeMenuAttach)
-        this.el.menuAttach.removeClass('open')
+        document.removeEventListener('click', this.closeMenuAttach);
+        this.el.menuAttach.removeClass('open');
         // console.log('removeu menu')
 
     }
@@ -539,20 +677,20 @@ class WhatsAppController {
     closeAllMainPanel(){
 
         // Esconder o painel do container de mensagens
-        this.el.panelMessagesContainer.hide()
+        this.el.panelMessagesContainer.hide();
 
         // Esconder o painel do container de documentos
-        this.el.panelDocumentPreview.removeClass('open')
+        this.el.panelDocumentPreview.removeClass('open');
 
         // Esconder o painel do container da camera
-        this.el.panelCamera.removeClass('open')
+        this.el.panelCamera.removeClass('open');
 
     }
 
     closeRecordMicrofone() {
 
-        this.el.recordMicrophone.hide()
-        this.el.btnSendMicrophone.show()
+        this.el.recordMicrophone.hide();
+        this.el.btnSendMicrophone.show();
 
         // Temos que parar o timer
         clearInterval(this._recordMicrofoneInterval)
@@ -561,7 +699,7 @@ class WhatsAppController {
 
     recordMicrophoneTime() {
 
-        let start = Date.now()
+        let start = Date.now();
 
         this._recordMicrofoneInterval = setInterval(() => {
 

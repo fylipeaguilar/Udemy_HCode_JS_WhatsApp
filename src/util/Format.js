@@ -1,5 +1,5 @@
 // Criando a classe format
-class Format {
+export class Format {
 
     // Obs.: Nessa classe não teremos o método construtor,
     // pois criaremos métodos estáticos
