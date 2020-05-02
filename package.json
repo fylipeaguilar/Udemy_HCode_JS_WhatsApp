@@ -19,6 +19,8 @@
   },
   "homepage": "https://github.com/fylipeaguilar/Udemy_HCode_JS_WhatsApp#readme",
   "dependencies": {
+    "firebase": "^7.14.1",
+    "pdfjs-dist": "^2.3.200",
     "webpack": "^3.1.0",
     "webpack-dev-server": "^2.5.1"
   }

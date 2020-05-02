@@ -7,17 +7,22 @@ module.exports = {
     // ****** 2 INFORMAÇÕES IMPORTANTES DE CONFIGURACAO DO WEBPACK ******//
 
     // (1) Arquivo de entrada
-    entry:  './src/app.js',
+    entry: {
+
+        app: './src/app.js',
+        'pdf.worker': 'pdfjs-dist/build/pdf.worker.entry.js'
+        
+    },
 
     // (2) Arquivo de saída
     // Tem algumas informações 
     output: {
 
         // Esse será o arquivo compilado de js finais
-        filename: 'bundle.js',
+        filename: '[name].bundle.js',
 
         // Caminho que o arquivo estará disponivel
-        path: path.resolve(__dirname, '/dist'),
+        path: path.join(__dirname, 'dist'),
 
         // Pasta "publica" para ser usado no acesso final 
         publicPath: 'dist'

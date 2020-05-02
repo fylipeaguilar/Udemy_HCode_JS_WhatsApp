@@ -36,5 +36,22 @@ export class Format {
         }
 
     }
+    
+    static dateToTime(date, locate = 'pt-BR') {
+
+        return date.toLocaleTimeString(this._locale, {
+
+            hour: '2-digit',
+            minute: '2-digit'
+
+        })
+
+    }
+
+    static timeStampToTime(timeStamp) {
+
+        return (timeStamp && typeof timeStamp.toDate === 'function') ? Format.dateToTime(timeStamp.toDate()) : '';
+
+    }
 
 }
