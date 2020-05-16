@@ -7,6 +7,7 @@ import { Firebase } from './../util/Firebase'
 import { User } from '../model/User';
 import { Chat } from '../model/Chat';
 import { Message } from '../model/Message'
+import { Base64 } from "../util/Base64"
 
 // Criando a classe "WhatsAppController" para
 // ter as funções das nossas regras de negócio
@@ -281,7 +282,16 @@ export class WhatsAppController {
                     // Agora vamos adicionar as mensagens dentro do panel
                     this.el.panelMessagesContainer.appendChild(view);
 
-                } else if (me) {
+                } else {
+
+                    let view = message.getViewElement(me);
+
+                    this.el.panelMessagesContainer.querySelector('#_' + data.id).innerHTML =  view.innerHTML;
+
+                }
+                                
+                
+                if (this.el.panelMessagesContainer.querySelector('#_' + data.id) && me) {
 
                     let msgEl = this.el.panelMessagesContainer.querySelector('#_' + data.id)
 
@@ -707,7 +717,7 @@ export class WhatsAppController {
         // Abrir a função de tirar foto
         this.el.btnTakePicture.on('click', e => {
 
-            let dataUrl =this._camera.tackPicture();
+            let dataUrl = this._camera.tackPicture();
 
             this.el.pictureCamera.src = dataUrl;
 
@@ -750,7 +760,65 @@ export class WhatsAppController {
         // Enviar a foto
         this.el.btnSendPicture.on('click', e => {
 
-            // console.log(this.el.pictureCamera.src)
+            this.el.btnSendPicture.disabled = true;
+
+            //console.log(this.el.pictureCamera.src)
+
+            // O "//" é uma expressão regular
+            // O "^" indica o começo da expressão regular
+            // O "$" indica o final da expressão regular
+            //let regex = /^data:image/png;base64,(.*)$/;
+            let regex = /^data:(.+);base64,(.*)$/;
+
+            let result = this.el.pictureCamera.src.match(regex);
+            //console.log(result)
+
+            let mimeType = result[1];
+            let ext = mimeType.split('/')[1]
+
+            // Montar o nome do arquivo
+            let filename = `camera${Date.now()}.${ext}`
+
+            // Criando um canvas para não enviar uma imagem invertida
+            let picture = new Image();
+            picture.src =  this.el.pictureCamera.src;
+            picture.onload = e => {
+
+                let canvas = document.createElement('canvas');
+                let context = canvas.getContext('2d');
+
+                canvas.width = picture.width;
+                canvas.height = picture.height;
+
+                // Desloca da tela exatamente a largura da minha imagem
+                // Deslocou horizontalmente e "0" verticamente (verticalmente não deslocou)
+                context.translate(picture.width, 0);
+                context.scale(-1, 1);
+
+                context.drawImage(picture, 0, 0, canvas.width, canvas.height)
+
+                // Fetch retorna uma promessa
+                fetch(canvas.toDataURL(mimeType))
+                .then(res => {return res.arrayBuffer()})
+                .then(buffer => {return new File([buffer], filename, { type: mimeType})})
+                .then(file => {
+
+                    Message.sendImage(this._contactActive.chatId, this._user.email, file)
+
+                    this.el.btnSendPicture.disabled = false;
+
+                    this.closeAllMainPanel();
+                    this._camera.stop();
+                    this.el.btnReshootPanelCamera.hide();
+                    this.el.pictureCamera.hide();
+                    this.el.videoCamera.show();
+                    this.el.containerSendPicture.hide();
+                    this.el.containerTakePicture.show();
+                    this.el.panelMessagesContainer.show();
+
+                })
+
+            }
 
         })
 
@@ -871,7 +939,38 @@ export class WhatsAppController {
 
         this.el.btnSendDocument.on('click', e => {
 
-            console.log('Enviar para o Firebse???')
+            let file = this.el.inputDocument.files[0];
+            let base64 = this.el.imgPanelDocumentPreview.src;
+
+            if(file.type === 'application/pdf') {
+
+                Base64.toFile(base64).then( filePreview => {
+
+                    // Criando um método para enviar o arquivo
+                    Message.sendDocument(
+                        this._contactActive.chatId,
+                        this._user.email,
+                        file,
+                        filePreview,
+                        this.el.infoPanelDocumentPreview.innerHTML
+                    );
+
+                })
+
+            } else {
+
+                // Criando um método para enviar o arquivo
+                Message.sendDocument(
+                    this._contactActive.chatId,
+                    this._user.email,
+                    file,
+                    
+                );
+                    
+            }
+
+            this.el.btnClosePanelDocumentPreview.click();
+
 
         })
         // ************** FIM - DOCUMENTOS ***************************** //

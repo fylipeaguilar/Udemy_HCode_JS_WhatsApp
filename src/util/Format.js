@@ -37,9 +37,9 @@ export class Format {
 
     }
     
-    static dateToTime(date, locate = 'pt-BR') {
+    static dateToTime(date, locale = 'pt-BR') {
 
-        return date.toLocaleTimeString(this._locale, {
+        return date.toLocaleTimeString(locale, {
 
             hour: '2-digit',
             minute: '2-digit'
