@@ -8,6 +8,8 @@ import { User } from '../model/User';
 import { Chat } from '../model/Chat';
 import { Message } from '../model/Message'
 import { Base64 } from "../util/Base64"
+import { ContactsController } from "./ContactsController"
+import { Upload } from '../util/Upload';
 
 // Criando a classe "WhatsAppController" para
 // ter as funções das nossas regras de negócio
@@ -255,6 +257,8 @@ export class WhatsAppController {
 
                 let me = (data.from === this._user.email);
 
+                let view = message.getViewElement(me);
+
                 // Verificando se a mensagem já existe
                 // para não incluir novamente
                 if (!this.el.panelMessagesContainer.querySelector('#_' + data.id)) {
@@ -277,16 +281,15 @@ export class WhatsAppController {
 
                     }
 
-                    let view = message.getViewElement(me);
-
                     // Agora vamos adicionar as mensagens dentro do panel
                     this.el.panelMessagesContainer.appendChild(view);
 
                 } else {
 
-                    let view = message.getViewElement(me);
+                    let parent = this.el.panelMessagesContainer.querySelector('#_' + data.id).parentNode;
 
-                    this.el.panelMessagesContainer.querySelector('#_' + data.id).innerHTML =  view.innerHTML;
+                    // Trocando o "parentesco" do elemento
+                    parent.replaceChild(view, this.el.panelMessagesContainer.querySelector('#_' + data.id))
 
                 }
                                 
@@ -298,6 +301,38 @@ export class WhatsAppController {
                     // A propriedade outerHTML é para pegar  o conteúdo com
                     // o seu próprio elemento
                     msgEl.querySelector('.message-status').innerHTML = message.getStatusViewElement().outerHTML;
+                }
+
+                if (message.type === 'contact') {
+
+                    view.querySelector('.btn-message-send').on('click', e => {
+
+                        // Antes de adiocionar o contato, já podemos criar o "chat"
+                        // Se já existir, só traz a referencia do id, senão cria o chat
+                        Chat.createIfNotExists(this._user.email, message.content.email).then(chat => {
+    
+                            let contact = new User(message.content.email)
+
+                            contact.on('datachange', data => {
+
+                                // Colocamos o id do chat no contato que estamos criando
+                                contact.chatId = chat.id;
+
+                                this._user.addConctat(contact);
+
+                                // Adicionando o id no meu próprio usuário
+                                this._user.chatId = chat.id; 
+
+                                contact.addConctat(this._user);
+
+                                this.setActiveChat(contact)
+
+                            })
+
+                        })
+    
+                    })
+
                 }
 
             });
@@ -493,6 +528,34 @@ export class WhatsAppController {
             this.el.inputProfilePhoto.click()
 
         })
+
+        this.el.inputProfilePhoto.on('change', e => {
+
+            // Indica que ter arquivos dentro do input
+            if(this.el.inputProfilePhoto.files.length > 0) {
+
+                // Vamos pegar o primeiro arquivo para fazer o upload
+                let file = this.el.inputProfilePhoto.files[0];
+
+                Upload.send(file, this._user.email).then(snapshot => {
+
+                    snapshot.ref.getDownloadURL().then( downloadURL => {
+
+                        this._user.photo = downloadURL;
+                        this._user.save().then(() => {
+
+                            this.el.btnClosePanelEditProfile.click();
+
+                        });
+
+                    })
+
+                })
+
+            }
+
+        })
+
 
         // Selecionando o campo para alteração do nome
         // Neste caso não é um evento de click, é "precionado o campo"
@@ -980,7 +1043,26 @@ export class WhatsAppController {
 
         this.el.btnAttachContact.on('click', e => {
 
-            this.el.modalContacts.show();
+            // Foi para a classe
+            //this.el.modalContacts.show();
+
+            // Criando um atributo e colocando a nova classe
+            // ContactsController a esse atributo
+            this._contactsController = new ContactsController(this.el.modalContacts, this._user);
+
+            // A nossa classe terá um evento e já vamos deixá-lo configurado
+            this._contactsController.on('select', contact => {
+                
+                // Passando o id do chat, from
+                Message.sendContact(
+                    this._contactActive.chatId, // id do chat
+                    this._user.email, // que é o nosso e-mail
+                    contact //o contrato que estamos passando
+                )
+
+            })
+
+            this._contactsController.open();
 
         })
 
@@ -988,7 +1070,10 @@ export class WhatsAppController {
 
         this.el.btnCloseModalContacts.on('click', e => {
 
-            this.el.modalContacts.hide();
+            this._contactsController.close();
+
+            // Foi para a classe
+            //this.el.modalContacts.hide();
 
         })
 
@@ -1033,6 +1118,19 @@ export class WhatsAppController {
         })
 
         this.el.btnFinishMicrophone.on('click', e => {
+
+            this._microphoneController.on('recorded', (file, metadata) => {
+
+                Message.sendAudio(
+
+                    this._contactActive.chatId,
+                    this._user.email,
+                    file,
+                    metadata,
+                    this._user.photo
+                )
+
+            })
 
             this._microphoneController.stopRecorder();
             this.closeRecordMicrofone();

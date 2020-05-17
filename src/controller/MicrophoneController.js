@@ -87,19 +87,34 @@ export class MicrophoneController extends ClassEvent {
                 // Agora precisamos transformar o "this._recordedChunks" num arquivo
                 // Criando de fato o arquivo
                 let filename = `rec${Date.now()}.webm`
+
+                let audioContext = new AudioContext();
+
+                // Transformando num array buffer
+                let reader = new FileReader();
+
+                reader.onload = e => {
+
+                    audioContext.decodeAudioData(reader.result).then(decode => {
+
+                        // O File() esperar receber um array de blob e o nome do arquivo
+                        // E demais propriedade podemos passar
+                        let file = new File([blob], filename, {
+
+                            type: this._mimeType,
+                            lastModified: Date.now()
+
+                        });
+
+                        this.trigger('recorded', file, decode);
+
+                    })
+
+                }
+
+                reader.readAsArrayBuffer(blob);
                 
-                // O File() esperar receber um array de blob e o nome do arquivo
-                // E demais propriedade podemos passar
-                let file = new File([blob], filename, {
-
-                    type: this._mimeType,
-                    lastModified: Date.now()
-
-                });
-
-                console.log('file', file)
-
-
+                
 
             // ************ APENAS TESTANDO O ARQUIVO *********** //
             //     let reader = new FileReader();
