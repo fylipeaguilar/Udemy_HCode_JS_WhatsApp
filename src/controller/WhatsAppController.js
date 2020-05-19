@@ -21,6 +21,9 @@ export class WhatsAppController {
         // ********** ATRIBUTOS ************
         // console.log('WhatsAppController OK')
 
+        // Foco na janela do windows
+        this._active = true;
+
         // Criando a instancia da base do fire base
         this._firebase = new Firebase();
         
@@ -34,6 +37,73 @@ export class WhatsAppController {
         this.loadElements();
         // Criando o método para tratar os eventos iniciais
         this.initEvents();
+        // Criando um método para verificar se está ativo
+        // o recebimento de notificação
+        this.checkNotifications();
+
+
+    }
+
+    // Método para verificar ou habilitar/recuzar 
+    // as notificações 
+    checkNotifications() {
+
+        // Notification: comando nativo
+        if(typeof Notification === 'function') {
+
+            if(Notification.permission !== 'granted') {
+
+                this.el.alertNotificationPermission.show();
+
+            } else {
+
+                this.el.alertNotificationPermission.hide();
+
+            }
+
+            this.el.alertNotificationPermission.on('click', e=> {
+
+                Notification.requestPermission( permission => {
+
+                    if(permission === 'granted') {
+
+                        this.el.alertNotificationPermission.hide();
+                        console.info('notificações permitidas!!')
+
+                    }
+
+                });
+
+
+            })
+
+        }
+
+    }
+
+    notification(data) {
+
+        if(Notification.permission === 'granted' && !this._active) {
+
+            let n = new Notification(this._contactActive.name, {
+
+                icon: this._contactActive.photo,
+                body: data.content
+
+            })
+
+            // Usando o audio origianal do WhatsApp nas notificações
+            let sound = new Audio('./audio/alert.mp3');
+            sound.currentTime = 0;
+            sound.play();
+
+            setTimeout( () => {
+
+                if(n) n.close();
+
+            }, 3000)
+
+        }
 
     }
 
@@ -234,16 +304,19 @@ export class WhatsAppController {
         // Limpando o conteudo do container
         this.el.panelMessagesContainer.innerHTML = '';
 
+        // Guardando "id" das mensagens que já foram notificadas
+        this._messagesReceived = []        
+
         // Primeiro vamos carregar a referencia da mensagem
         Message.getRef(this._contactActive.chatId).orderBy('timeStamp').onSnapshot(docs => {
 
-             // Verificando as configurações do Scroll
-             let scrollTop = this.el.panelMessagesContainer.scrollTop;
+            // Verificando as configurações do Scroll
+            let scrollTop = this.el.panelMessagesContainer.scrollTop;
 
-             // Calculo é o limite que conseguiremos descer
-             let scrollTopMax = (this.el.panelMessagesContainer.scrollHeight - this.el.panelMessagesContainer.offsetHeight)
+            // Calculo é o limite que conseguiremos descer
+            let scrollTopMax = (this.el.panelMessagesContainer.scrollHeight - this.el.panelMessagesContainer.offsetHeight)
 
-             let autoScroll = (scrollTop >= scrollTopMax)
+            let autoScroll = (scrollTop >= scrollTopMax)
 
             docs.forEach( doc => {
 
@@ -251,11 +324,23 @@ export class WhatsAppController {
                 data.id = doc.id;
 
                 let message = new Message();
-
+        
                 // Carregando o JSON
-                message.fromJSON(data);
+                message.fromJSON(data);            
 
                 let me = (data.from === this._user.email);
+
+                // Conseguimos filtrar pois é um array
+                if(!me && this._messagesReceived.filter(id => { return (id === data.id)}).length === 0) {
+
+                    // Faz a notificação
+                    this.notification(data);
+
+                    // Adiciona no array a mensagem notificada
+                    this._messagesReceived.push(data.id);
+
+
+                }
 
                 let view = message.getViewElement(me);
 
@@ -466,6 +551,19 @@ export class WhatsAppController {
 
     // Criando o método para tratar os eventos iniciais
     initEvents() {
+
+        // Eventos das notificações de mensagens
+        window.addEventListener('focus', e => {
+
+            this._active = true;
+
+        })
+
+        window.addEventListener('blur', e => {
+
+            this._active = false;
+
+        })
 
         // ******************** PROFILE ****************************
 
